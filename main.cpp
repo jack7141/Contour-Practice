@@ -21,25 +21,27 @@ void thresh_callback(int, void*)
     vector<vector<Point>> contours;
     findContours( src_canny, contours, CV_RETR_TREE, CHAIN_APPROX_SIMPLE );
 
-
-    vector<vector<Point>> contours_poly(contours.size());
-    vector<Rect> boundRect(contours.size());
-    vector<Point2f> centers(contours.size());
-    vector<float> radius(contours.size());
+    vector<RotatedRect> minRect(contours.size());
+    vector<RotatedRect> minEllipse(contours.size());
 
     for ( size_t i=0; i<contours.size(); i++) {
-        approxPolyDP(contours[i],contours_poly[i],3,true);
-        boundRect[i]=boundingRect(contours_poly[i]);
-        minEnclosingCircle(contours_poly[i],centers[i],radius[i]);
-    }
 
-//    Mat drawing = Mat::zeros( src_canny.size(), CV_8UC3 );
+        minRect[i] = minAreaRect( contours[i] );
+        if( contours[i].size() > 5) {
+            minEllipse[i] = fitEllipse( contours[i] );
+        }
+    }
 
     for ( size_t i=0; i<contours.size(); i++ ) {
 
-        drawContours( Image,contours_poly,i,Scalar(255,255,0) );
-        rectangle( Image, boundRect[i].tl(), boundRect[i].br(), Scalar(255,255,0), 2);
-        circle( Image, centers[i], radius[i], Scalar(255,255,0), 2);
+        drawContours( Image,contours,i,Scalar(255,255,0) );
+        ellipse(Image, minEllipse[i], Scalar(255,255,0),2);
+        Point2f rect_point[4];
+        minRect[i].points(rect_point);
+        for ( int j = 0; j < 4; j++ ) {
+            line(Image,rect_point[j],rect_point[(j+1)%4], Scalar(255,255,0));
+        }
+
     }
     imshow("show",Image);
 }
